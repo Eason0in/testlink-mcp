@@ -7,6 +7,19 @@ describe("TestLink normalization", () => {
     expect(item.summary).toBe("Hello");
     expect(item.steps[0]).toEqual({ number: 1, actions: "Act", expectedResults: "Done" });
   });
+  it("preserves normalized camel-case identifiers and execution types", () => {
+    const item = normalizeTestCase({
+      id: "101",
+      externalId: "DEMO-1",
+      version: 1,
+      name: "Case",
+      executionType: "automated",
+      steps: [{ number: 1, actions: "Act", expectedResults: "Done", executionType: "manual" }],
+    });
+    expect(item.externalId).toBe("DEMO-1");
+    expect(item.executionType).toBe("automated");
+    expect(item.steps[0]?.executionType).toBe("manual");
+  });
   it("removes all attachment payload aliases", () => {
     expect(sanitizeAttachment({ id: "1", file_name: "x.png", content: "AAAA", base64: "BBBB", fileContent: "CCCC" })).toEqual({ id: "1", file_name: "x.png" });
   });

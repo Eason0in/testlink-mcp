@@ -21,7 +21,7 @@ function number(value: unknown): number | undefined {
 }
 
 export function normalizeStep(raw: JsonObject, index: number): TestCaseStep {
-  const executionType = text(raw.execution_type);
+  const executionType = text(raw.execution_type ?? raw.executionType);
   return {
     number: number(raw.step_number ?? raw.step_number_display ?? raw.id) ?? index + 1,
     actions: text(raw.actions ?? raw.step_actions) ?? "",
@@ -33,13 +33,13 @@ export function normalizeStep(raw: JsonObject, index: number): TestCaseStep {
 export function normalizeTestCase(raw: JsonObject): NormalizedTestCase {
   const stepsRaw = Array.isArray(raw.steps) ? raw.steps : asArray(raw.steps);
   const id = text(raw.id ?? raw.testcase_id);
-  const externalId = text(raw.full_external_id ?? raw.external_id ?? raw.testcase_external_id);
+  const externalId = text(raw.full_external_id ?? raw.external_id ?? raw.testcase_external_id ?? raw.externalId);
   const version = number(raw.version);
   const summary = text(raw.summary);
   const preconditions = text(raw.preconditions);
   const status = text(raw.status);
   const importance = text(raw.importance);
-  const executionType = text(raw.execution_type);
+  const executionType = text(raw.execution_type ?? raw.executionType);
   const suiteId = text(raw.testsuite_id ?? raw.suiteId);
   return {
     ...(id ? { id } : {}),

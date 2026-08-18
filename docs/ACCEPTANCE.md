@@ -2,6 +2,17 @@
 
 Date: 2026-08-18 (Asia/Taipei)
 
+## Post-acceptance Toolkit integration
+
+Toolkit integration found and fixed a camel-case normalization gap for
+`externalId` and `executionType`. The updated source passes 50 tests and 9 evals
+on Node 22.23.2, 24.19.0, and 26.7.0, and the local Toolkit demo integration
+passes external-ID, suite, plan, and batch-create flows.
+
+The package hashes and container digest recorded below belong to the original
+`085da22` acceptance baseline. They must be regenerated before publishing the
+post-acceptance normalization fix.
+
 ## Result
 
 The local `testlink-mcp` 1.0.0 release candidate is accepted for implementation,
