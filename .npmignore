@@ -1,0 +1,12 @@
+src/
+tests/
+evals/
+.github/
+docs/
+tsconfig.json
+vitest.config.ts
+.env.example
+Dockerfile
+docker-compose.yml
+SECURITY.md
+CONTRIBUTING.md

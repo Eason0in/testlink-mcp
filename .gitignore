@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+.DS_Store
+coverage/
+*.tgz
+docs/reports/*.json
+docs/reports/*.txt
+!docs/reports/README.md

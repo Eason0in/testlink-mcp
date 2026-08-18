@@ -1,0 +1,66 @@
+{
+  "name": "testlink-mcp",
+  "version": "1.0.0",
+  "description": "AI-friendly, safety-first MCP server for TestLink 1.9.20",
+  "license": "MIT",
+  "type": "module",
+  "mcpName": "io.github.easonlin/testlink-mcp",
+  "bin": {
+    "testlink-mcp": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "server.json"
+  ],
+  "engines": {
+    "node": "^22.23.2 || ^24.18.1 || ^26.5.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/easonlin/testlink-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/easonlin/testlink-mcp/issues"
+  },
+  "homepage": "https://github.com/easonlin/testlink-mcp#readme",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "testlink",
+    "testing",
+    "xml-rpc",
+    "ai"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:contract": "vitest run tests/contract",
+    "test:e2e": "vitest run tests/e2e",
+    "eval": "vitest run evals",
+    "start": "node dist/cli.js",
+    "pack:dry-run": "npm pack --dry-run",
+    "sbom": "npm sbom --sbom-format cyclonedx > docs/reports/sbom.cdx.json"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "dotenv": "17.4.2",
+    "fast-xml-parser": "5.11.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.13",
+    "tsx": "4.20.6",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
