@@ -5,7 +5,7 @@
   "license": "MIT",
   "packageManager": "npm@11.17.0",
   "type": "module",
-  "mcpName": "io.github.easonlin/testlink-mcp",
+  "mcpName": "io.github.eason0in/testlink-mcp",
   "bin": {
     "testlink-mcp": "dist/cli.js"
   },
@@ -22,12 +22,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/easonlin/testlink-mcp.git"
+    "url": "git+https://github.com/Eason0in/testlink-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/easonlin/testlink-mcp/issues"
+    "url": "https://github.com/Eason0in/testlink-mcp/issues"
   },
-  "homepage": "https://github.com/easonlin/testlink-mcp#readme",
+  "homepage": "https://github.com/Eason0in/testlink-mcp#readme",
   "keywords": [
     "mcp",
     "model-context-protocol",

@@ -56,10 +56,11 @@ export class OperationManager {
       this.previews.delete(id);
       throw new TestLinkMcpError("PREVIEW_EXPIRED", "Preview expired after 10 minutes. Create a new preview.");
     }
+    this.previews.delete(id);
     return preview;
   }
 
-  async record(preview: Preview, outcome: "applied" | "conflict" | "failed", result: unknown): Promise<void> {
+  async record(preview: Preview, outcome: "attempted" | "applied" | "conflict" | "failed" | "outcome_unknown", result: unknown): Promise<void> {
     await mkdir(dirname(this.ledgerPath), { recursive: true, mode: 0o700 });
     const row = redact({
       timestamp: this.now().toISOString(),
@@ -71,6 +72,5 @@ export class OperationManager {
       result,
     });
     await appendFile(this.ledgerPath, `${JSON.stringify(row)}\n`, { encoding: "utf8", mode: 0o600 });
-    if (outcome === "applied") this.previews.delete(preview.id);
   }
 }

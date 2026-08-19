@@ -11,7 +11,7 @@ This repository is a clean implementation based on TestLink's public XML-RPC int
 - `structuredContent`, `outputSchema`, tool annotations, cursor pagination, and stable error codes.
 - Attachment metadata only; attachment content and base64 payloads are removed.
 - Writes disabled by default. There is no delete tool.
-- Every apply requires `confirm: true`, an unexpired 10-minute preview, and an unchanged server snapshot.
+- Every apply requires `confirm: true`, an unexpired single-use 10-minute preview, and an unchanged server snapshot.
 - Side-effect calls are never automatically retried; apply attempts are written to a redacted operation ledger.
 - Runtime guard blocks unsupported/EOL odd Node releases and security patch levels below the declared floor.
 
@@ -68,7 +68,7 @@ Do not put real credentials in tracked files. Copy `.env.example` to an ignored 
 | Analyze | `testlink_search_test_cases` | Search cases in a bounded project/suite scope |
 | Analyze | `testlink_get_test_case` | Retrieve one normalized case |
 | Analyze | `testlink_list_test_case_attachments` | Retrieve safe attachment metadata |
-| Analyze | `testlink_get_traceability` | Inspect requirement and plan coverage |
+| Analyze | `testlink_get_traceability` | Inspect requirement links and membership in one required test plan |
 | Analyze | `testlink_get_execution_history` | Inspect recent execution evidence |
 | Validate | `testlink_validate_test_case` | Find incomplete or ambiguous case content |
 | Preview | `testlink_preview_test_case_sync` | Preview create/update and plan memberships |
@@ -96,9 +96,16 @@ Failures use `ok: false` with `{ code, message, retryable, details? }`. Consumer
 1. Search for an existing case and retrieve its current version.
 2. Validate the desired test case.
 3. Call the relevant preview tool.
-4. Show `proposedChanges` to the user and obtain explicit confirmation.
-5. Call apply with the preview ID and `confirm: true` within 10 minutes.
-6. If apply returns `CONFLICT` or `PREVIEW_EXPIRED`, create and review a new preview.
+4. For a create, provide the TestLink `authorLogin`; `desiredCase.suiteId`,
+   `summary`, and `steps` are also required by TestLink 1.9.20.
+5. Show `proposedChanges` to the user and obtain explicit confirmation.
+6. Call apply with the preview ID and `confirm: true` within 10 minutes.
+7. A confirmed apply consumes its preview before any side effect. After any
+   success, conflict, or failure, create and review a new preview before trying
+   again.
+8. If apply returns `OUTCOME_UNKNOWN`, do not retry. The remote write may have
+   succeeded; reconcile the TestLink case, plan membership, or execution result
+   first.
 
 Enable writes only in the server process that should perform them:
 
@@ -106,7 +113,7 @@ Enable writes only in the server process that should perform them:
 TESTLINK_WRITE_ENABLED=true npx -y testlink-mcp@1.0.0
 ```
 
-The default ledger path is `~/.local/state/testlink-mcp/operations.jsonl`. Override it with `TESTLINK_LEDGER_PATH`. The ledger contains hashes and redacted outcomes, not developer keys.
+The default ledger path is `~/.local/state/testlink-mcp/operations.jsonl`. Override it with `TESTLINK_LEDGER_PATH`. Before a remote write, the server persists an `attempted` row; it then records `applied` or `outcome_unknown`. The ledger contains hashes and redacted outcomes, not developer keys.
 
 ## Configuration
 
@@ -149,7 +156,7 @@ The image runs as a non-root user and uses Node 24.19.0. Build without pushing:
 docker buildx build --platform linux/amd64,linux/arm64 --tag testlink-mcp:local --output type=oci,dest=testlink-mcp.oci.tar .
 ```
 
-Future image name after approval and publication: `ghcr.io/easonlin/testlink-mcp:1.0.0`.
+Future image name after approval and publication: `ghcr.io/eason0in/testlink-mcp:1.0.0`.
 
 ## Release policy
 
@@ -163,11 +170,14 @@ A separate protected live-smoke workflow verifies the installed package against
 a real TestLink 1.9.20 instance using read-only calls. Its URL and developer key
 must be stored as environment secrets and are never written to logs.
 
-The package manifest and `server.json` share the MCP name `io.github.easonlin/testlink-mcp`. Registry validation can be run without publishing:
+The package manifest and `server.json` share the MCP name `io.github.eason0in/testlink-mcp`. Registry validation can be run without publishing:
 
 ```bash
 mcp-publisher validate server.json
 ```
+
+The account-side setup and submission data for npm, the MCP Registry, Glama,
+and MCP.so are tracked in [Marketplace submission checklist](docs/marketplace-submission.md).
 
 ## Public references
 

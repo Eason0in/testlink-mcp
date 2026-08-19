@@ -31,6 +31,14 @@ jobs:
       - run: npm audit --omit=dev --audit-level=high
       - run: npm sbom --sbom-format cyclonedx > sbom.cdx.json
       - run: npm pack --dry-run
+      - name: Smoke installed npm package
+        if: matrix.node == '24.19.0'
+        run: |
+          package_dir="$RUNNER_TEMP/testlink-mcp-package"
+          mkdir -p "$package_dir"
+          package_name="$(npm pack --pack-destination "$package_dir" --silent)"
+          npm install --ignore-scripts --prefix "$package_dir/install" "$package_dir/$package_name"
+          node tests/smoke-installed.mjs "$package_dir/install/node_modules/.bin/testlink-mcp"
       - name: Validate MCP Registry metadata
         if: matrix.node == '24.19.0'
         run: |

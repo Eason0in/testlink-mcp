@@ -20,6 +20,17 @@ describe("TestLink normalization", () => {
     expect(item.executionType).toBe("automated");
     expect(item.steps[0]?.executionType).toBe("manual");
   });
+  it("uses TestLink's case ID instead of the version ID", () => {
+    const item = normalizeTestCase({
+      id: "1001",
+      testcase_id: "101",
+      full_tc_external_id: "PUB-1",
+      name: "Case",
+      steps: [],
+    });
+    expect(item.id).toBe("101");
+    expect(item.externalId).toBe("PUB-1");
+  });
   it("removes all attachment payload aliases", () => {
     expect(sanitizeAttachment({ id: "1", file_name: "x.png", content: "AAAA", base64: "BBBB", fileContent: "CCCC" })).toEqual({ id: "1", file_name: "x.png" });
   });

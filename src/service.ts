@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Config } from "./config.js";
 import { TestLinkMcpError, toSafeError } from "./errors.js";
 import { asArray, normalizeTestCase, sanitizeAttachment } from "./normalize.js";
-import { OperationManager, snapshotHash } from "./operations.js";
+import { OperationManager, snapshotHash, type Preview } from "./operations.js";
 import { paginate } from "./pagination.js";
 import { redact } from "./redaction.js";
 import type { Gateway, JsonObject, McpResult, NormalizedTestCase } from "./types.js";
@@ -11,7 +11,7 @@ function value<T>(object: JsonObject, key: string, fallback: T): T {
   return (object[key] as T | undefined) ?? fallback;
 }
 
-function toCaseParams(testCase: NormalizedTestCase): JsonObject {
+function toCaseParams(testCase: NormalizedTestCase, authorLogin?: string): JsonObject {
   return {
     ...(testCase.id ? { testcaseid: testCase.id } : {}),
     testcasename: testCase.name,
@@ -20,6 +20,7 @@ function toCaseParams(testCase: NormalizedTestCase): JsonObject {
     ...(testCase.preconditions ? { preconditions: testCase.preconditions } : {}),
     ...(testCase.importance ? { importance: testCase.importance } : {}),
     ...(testCase.executionType ? { executiontype: testCase.executionType } : {}),
+    ...(authorLogin ? { authorlogin: authorLogin } : {}),
     steps: testCase.steps.map((step) => ({
       step_number: step.number,
       actions: step.actions,
@@ -28,6 +29,25 @@ function toCaseParams(testCase: NormalizedTestCase): JsonObject {
     })),
     testcase: testCase,
   };
+}
+
+function asTestCaseArray(value: unknown): JsonObject[] {
+  const cases: JsonObject[] = [];
+  const visit = (item: unknown): void => {
+    if (!item || typeof item !== "object") return;
+    if (Array.isArray(item)) {
+      item.forEach(visit);
+      return;
+    }
+    const object = item as JsonObject;
+    if ("id" in object || "name" in object || "testcase_id" in object) {
+      cases.push(object);
+      return;
+    }
+    Object.values(object).forEach(visit);
+  };
+  visit(value);
+  return cases;
 }
 
 export class TestLinkService {
@@ -135,7 +155,7 @@ export class TestLinkService {
         if (error instanceof TestLinkMcpError && error.code === "NOT_FOUND") cases = []; else throw error;
       }
     } else if (args.testPlanId) {
-      cases = asArray(await this.gateway.call("getTestCasesForTestPlan", {
+      cases = asTestCaseArray(await this.gateway.call("getTestCasesForTestPlan", {
         testplanid: args.testPlanId,
         details: "full",
         getstepsinfo: true,
@@ -154,16 +174,23 @@ export class TestLinkService {
     return paginate(cases, Number(args.limit ?? 50), args.cursor ? String(args.cursor) : undefined, { tool: "search", ...args, cursor: undefined, limit: undefined });
   }
 
-  private async fetchCase(locator: { id?: string; externalId?: string }): Promise<NormalizedTestCase> {
+  private async fetchCase(locator: { id?: string; externalId?: string; version?: number }): Promise<NormalizedTestCase> {
     if (!locator.id && !locator.externalId) throw new TestLinkMcpError("INVALID_ARGUMENT", "Provide testCaseId or externalId.");
-    const raw = await this.gateway.call("getTestCase", locator.id ? { testcaseid: locator.id } : { testcaseexternalid: locator.externalId });
+    const raw = await this.gateway.call("getTestCase", {
+      ...(locator.id ? { testcaseid: locator.id } : { testcaseexternalid: locator.externalId }),
+      ...(locator.version !== undefined ? { version: locator.version } : {}),
+    });
     const first = asArray(raw)[0];
     if (!first) throw new TestLinkMcpError("NOT_FOUND", "Test case was not found.");
     return normalizeTestCase(first);
   }
 
   private getCase(args: JsonObject): Promise<NormalizedTestCase> {
-    return this.fetchCase({ ...(args.testCaseId ? { id: String(args.testCaseId) } : {}), ...(args.externalId ? { externalId: String(args.externalId) } : {}) });
+    return this.fetchCase({
+      ...(args.testCaseId ? { id: String(args.testCaseId) } : {}),
+      ...(args.externalId ? { externalId: String(args.externalId) } : {}),
+      ...(args.version !== undefined ? { version: Number(args.version) } : {}),
+    });
   }
 
   private async attachments(args: JsonObject): Promise<unknown> {
@@ -172,12 +199,30 @@ export class TestLinkService {
   }
 
   private async traceability(args: JsonObject): Promise<unknown> {
+    if (!args.testPlanId) {
+      throw new TestLinkMcpError("INVALID_ARGUMENT", "testPlanId is required to verify traceability against a specific test plan.");
+    }
     if (this.gateway.source === "demo") return this.gateway.call("getTestCaseTraceability", { testcaseid: args.testCaseId, testplanid: args.testPlanId });
-    const [requirements, plans] = await Promise.all([
-      this.gateway.call("getReqCoverage", { testcaseid: args.testCaseId }),
-      this.gateway.call("getTestPlansOfTestCase", { testcaseid: args.testCaseId }),
-    ]);
-    return { requirements: asArray(requirements), plans: asArray(plans) };
+    const rawCase = asArray(await this.gateway.call("getTestCase", {
+      testcaseid: args.testCaseId,
+    }))[0];
+    const versionId = rawCase?.id ?? rawCase?.tcversion_id ?? rawCase?.testcaseversionid;
+    if (!versionId) {
+      throw new TestLinkMcpError(
+        "UNSUPPORTED_RESPONSE",
+        "TestLink did not return the test case version ID required for requirement traceability.",
+      );
+    }
+    const requirements = await this.gateway.call("getTestCaseRequirements", {
+      testcaseversionid: versionId,
+    });
+    const linkedCases = asArray(await this.gateway.call("getTestCasesForTestPlan", {
+      testplanid: args.testPlanId,
+      testcaseid: args.testCaseId,
+      details: "simple",
+    }));
+    const plans = [{ id: String(args.testPlanId), included: linkedCases.length > 0 }];
+    return { requirements: asArray(requirements), plans };
   }
 
   private async executionHistory(args: JsonObject): Promise<unknown> {
@@ -213,9 +258,29 @@ export class TestLinkService {
       catch (error) { if (!(error instanceof TestLinkMcpError && error.code === "NOT_FOUND")) throw error; }
     }
     const action = current ? "update" : "create";
+    const authorLogin = String(args.authorLogin ?? "").trim();
+    if (action === "create" && !authorLogin) {
+      throw new TestLinkMcpError(
+        "INVALID_ARGUMENT",
+        "authorLogin is required when creating a TestLink test case.",
+      );
+    }
+    if (action === "create" && !desired.suiteId) {
+      throw new TestLinkMcpError(
+        "INVALID_ARGUMENT",
+        "desiredCase.suiteId is required when creating a TestLink test case.",
+      );
+    }
+    if (action === "create" && !desired.summary) {
+      throw new TestLinkMcpError(
+        "INVALID_ARGUMENT",
+        "desiredCase.summary is required when creating a TestLink test case.",
+      );
+    }
     return this.operations.create("test_case_sync", current, {
       action,
       desiredCase: desired,
+      ...(action === "create" ? { authorLogin } : {}),
       currentCaseId: current?.id,
       testProjectId: args.testProjectId,
       testPlanIds: Array.isArray(args.testPlanIds) ? args.testPlanIds : [],
@@ -228,28 +293,42 @@ export class TestLinkService {
     const payload = preview.payload;
     const desired = payload.desiredCase as NormalizedTestCase;
     const currentId = payload.currentCaseId ? String(payload.currentCaseId) : undefined;
-    const current = currentId ? await this.fetchCase({ id: currentId }) : null;
+    let current: NormalizedTestCase | null;
+    try {
+      current = currentId ? await this.fetchCase({ id: currentId }) : null;
+    } catch (error) {
+      await this.recordPreflightFailure(preview, error);
+      throw error;
+    }
     if (snapshotHash(current) !== preview.snapshotHash) {
       await this.operations.record(preview, "conflict", { reason: "state_changed" });
       throw new TestLinkMcpError("CONFLICT", "Test case changed after preview. Create a new preview.");
     }
+    const action = String(payload.action);
+    await this.recordAttempt(preview, { action });
+    let output: unknown;
     try {
-      const action = String(payload.action);
       const result = action === "update"
         ? await this.gateway.call("updateTestCase", { ...toCaseParams(desired), testcaseid: currentId })
-        : await this.gateway.call("createTestCase", { ...toCaseParams(desired), testprojectid: payload.testProjectId });
+        : await this.gateway.call("createTestCase", {
+          ...toCaseParams(desired, String(payload.authorLogin)),
+          testprojectid: payload.testProjectId,
+        });
       const resolvedId = currentId ?? String(asArray(result)[0]?.id ?? "");
       const memberships = [];
       for (const planId of payload.testPlanIds as unknown[] ?? []) {
         memberships.push(await this.gateway.call("addTestCaseToTestPlan", { testprojectid: payload.testProjectId, testplanid: planId, testcaseexternalid: desired.externalId, testcaseid: resolvedId, version: desired.version ?? 1 }));
       }
-      const output = { action, testCaseId: resolvedId, result, memberships };
-      await this.operations.record(preview, "applied", output);
-      return output;
+      output = { action, testCaseId: resolvedId, result, memberships };
     } catch (error) {
-      await this.operations.record(preview, "failed", { code: toSafeError(error).code });
-      throw error;
+      return this.throwOutcomeUnknown(preview, error);
     }
+    try {
+      await this.operations.record(preview, "applied", output);
+    } catch (error) {
+      return this.throwOutcomeUnknown(preview, error);
+    }
+    return output;
   }
 
   private async previewExecution(args: JsonObject): Promise<unknown> {
@@ -269,20 +348,72 @@ export class TestLinkService {
   private async applyExecution(args: JsonObject): Promise<unknown> {
     this.requireWrites();
     const preview = this.operations.require(String(args.previewId), "execution_result", args.confirm === true);
-    const prior = await this.executionHistory({ testCaseId: preview.payload.testcaseid, testPlanId: preview.payload.testplanid, limit: 1 });
+    let prior: unknown;
+    try {
+      prior = await this.executionHistory({ testCaseId: preview.payload.testcaseid, testPlanId: preview.payload.testplanid, limit: 1 });
+    } catch (error) {
+      await this.recordPreflightFailure(preview, error);
+      throw error;
+    }
     if (snapshotHash(prior) !== preview.snapshotHash) {
       await this.operations.record(preview, "conflict", { reason: "execution_changed" });
       throw new TestLinkMcpError("CONFLICT", "Execution state changed after preview. Create a new preview.");
     }
     const statusMap: Record<string, string> = { passed: "p", failed: "f", blocked: "b" };
+    await this.recordAttempt(preview, { action: "report_execution_result" });
+    let result: unknown;
     try {
-      const result = await this.gateway.call("reportTCResult", { ...preview.payload, status: statusMap[String(preview.payload.status)] });
-      await this.operations.record(preview, "applied", result);
-      return result;
+      result = await this.gateway.call("reportTCResult", { ...preview.payload, status: statusMap[String(preview.payload.status)] });
     } catch (error) {
-      await this.operations.record(preview, "failed", { code: toSafeError(error).code });
-      throw error;
+      return this.throwOutcomeUnknown(preview, error);
     }
+    try {
+      await this.operations.record(preview, "applied", result);
+    } catch (error) {
+      return this.throwOutcomeUnknown(preview, error);
+    }
+    return result;
+  }
+
+  private async recordAttempt(preview: Preview, result: unknown): Promise<void> {
+    try {
+      await this.operations.record(preview, "attempted", result);
+    } catch (error) {
+      throw new TestLinkMcpError(
+        "LEDGER_WRITE_FAILED",
+        "The audit ledger could not record the attempt, so no remote write was made. Create a new preview after fixing ledger access.",
+        false,
+        { causeCode: toSafeError(error).code },
+      );
+    }
+  }
+
+  private async recordPreflightFailure(preview: Preview, error: unknown): Promise<void> {
+    try {
+      await this.operations.record(preview, "failed", { phase: "revalidation", code: toSafeError(error).code });
+    } catch (ledgerError) {
+      throw new TestLinkMcpError(
+        "LEDGER_WRITE_FAILED",
+        "Revalidation failed before any remote write, and the audit ledger could not record the failure. Create a new preview after fixing ledger access.",
+        false,
+        { causeCode: toSafeError(ledgerError).code },
+      );
+    }
+  }
+
+  private async throwOutcomeUnknown(preview: Preview, error: unknown): Promise<never> {
+    const causeCode = toSafeError(error).code;
+    try {
+      await this.operations.record(preview, "outcome_unknown", { causeCode });
+    } catch {
+      // The durable attempted row still tells operators to reconcile before retrying.
+    }
+    throw new TestLinkMcpError(
+      "OUTCOME_UNKNOWN",
+      "A remote write may have succeeded, but its final outcome could not be confirmed. Do not retry automatically; reconcile TestLink state first.",
+      false,
+      { causeCode },
+    );
   }
 
   private requireWrites(): void {
