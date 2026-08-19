@@ -34,7 +34,7 @@ describe("TestLink 1.9.20 XML-RPC fixture E2E", () => {
           getTestCaseAttachments: [{ id: "9", file_name: "expected.png", content: "SHOULD_NOT_ESCAPE" }],
           getTestCase: [{ id: "1001", testcase_id: "101", full_tc_external_id: "PUB-1", name: "Card payment succeeds", steps: [] }],
           getTestCaseRequirements: [{ id: "REQ-1", title: "Card payments" }],
-          getTestCasesForTestPlan: { 101: { 1001: { testcase_id: "101", tcversion_id: "1001" } } },
+          getTestCasesForTestPlan: { 101: { 1001: { testcase_id: "101", tcversion_id: "1001", full_tc_external_id: "PUB-1", name: "Card payment succeeds", summary: "Happy path", steps: [] } } },
           createTestCase: [{ id: "102", status: true, operation: "create" }],
         };
         response.writeHead(200, { "content-type": "text/xml" });
@@ -85,6 +85,26 @@ describe("TestLink 1.9.20 XML-RPC fixture E2E", () => {
     expect(requestBodies.get("getTestCaseRequirements")).toContain("<name>testcaseversionid</name><value><string>1001</string></value>");
     expect(requestBodies.get("getTestCasesForTestPlan")).toContain("<name>testcaseid</name><value><string>101</string></value>");
     expect(requestBodies.get("getTestCasesForTestPlan")).toContain("<name>testplanid</name><value><string>21</string></value>");
+  });
+
+  it("flattens TestLink's map-of-map test-plan response into normalized cases", async () => {
+    const config = loadConfig({ TESTLINK_URL: endpoint, TESTLINK_DEV_KEY: "synthetic-dev-key", TESTLINK_REQUEST_TIMEOUT_MS: "1000", TESTLINK_LEDGER_PATH: "/tmp/testlink-mcp-xmlrpc-plan-search-ledger.jsonl" });
+    const gateway = new XmlRpcGateway({ baseUrl: endpoint, devKey: "synthetic-dev-key", timeoutMs: 1000, maxResponseBytes: 1024 * 1024 });
+    const service = new TestLinkService(gateway, config);
+
+    expect(await service.execute("testlink_search_test_cases", { testPlanId: "21" })).toMatchObject({
+      ok: true,
+      data: { items: [{ id: "101", externalId: "PUB-1", name: "Card payment succeeds" }] },
+    });
+  });
+
+  it("passes an explicit test case version to TestLink", async () => {
+    const config = loadConfig({ TESTLINK_URL: endpoint, TESTLINK_DEV_KEY: "synthetic-dev-key", TESTLINK_REQUEST_TIMEOUT_MS: "1000", TESTLINK_LEDGER_PATH: "/tmp/testlink-mcp-xmlrpc-version-ledger.jsonl" });
+    const gateway = new XmlRpcGateway({ baseUrl: endpoint, devKey: "synthetic-dev-key", timeoutMs: 1000, maxResponseBytes: 1024 * 1024 });
+    const service = new TestLinkService(gateway, config);
+
+    expect(await service.execute("testlink_get_test_case", { testCaseId: "101", version: 2 })).toMatchObject({ ok: true });
+    expect(requestBodies.get("getTestCase")).toContain("<name>version</name><value><int>2</int></value>");
   });
 
   it("sends all TestLink 1.9.20 mandatory create parameters", async () => {

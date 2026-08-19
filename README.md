@@ -176,6 +176,9 @@ The package manifest and `server.json` share the MCP name `io.github.eason0in/te
 mcp-publisher validate server.json
 ```
 
+The account-side setup and submission data for npm, the MCP Registry, Glama,
+and MCP.so are tracked in [Marketplace submission checklist](docs/marketplace-submission.md).
+
 ## Public references
 
 - [TestLink 1.9.20 source and release branch](https://github.com/TestLinkOpenSourceTRMS/testlink-code/tree/testlink_1_9_20_fixed)

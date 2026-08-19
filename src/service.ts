@@ -31,6 +31,25 @@ function toCaseParams(testCase: NormalizedTestCase, authorLogin?: string): JsonO
   };
 }
 
+function asTestCaseArray(value: unknown): JsonObject[] {
+  const cases: JsonObject[] = [];
+  const visit = (item: unknown): void => {
+    if (!item || typeof item !== "object") return;
+    if (Array.isArray(item)) {
+      item.forEach(visit);
+      return;
+    }
+    const object = item as JsonObject;
+    if ("id" in object || "name" in object || "testcase_id" in object) {
+      cases.push(object);
+      return;
+    }
+    Object.values(object).forEach(visit);
+  };
+  visit(value);
+  return cases;
+}
+
 export class TestLinkService {
   readonly operations: OperationManager;
   constructor(readonly gateway: Gateway, readonly config: Config, operations?: OperationManager) {
@@ -136,7 +155,7 @@ export class TestLinkService {
         if (error instanceof TestLinkMcpError && error.code === "NOT_FOUND") cases = []; else throw error;
       }
     } else if (args.testPlanId) {
-      cases = asArray(await this.gateway.call("getTestCasesForTestPlan", {
+      cases = asTestCaseArray(await this.gateway.call("getTestCasesForTestPlan", {
         testplanid: args.testPlanId,
         details: "full",
         getstepsinfo: true,
@@ -155,16 +174,23 @@ export class TestLinkService {
     return paginate(cases, Number(args.limit ?? 50), args.cursor ? String(args.cursor) : undefined, { tool: "search", ...args, cursor: undefined, limit: undefined });
   }
 
-  private async fetchCase(locator: { id?: string; externalId?: string }): Promise<NormalizedTestCase> {
+  private async fetchCase(locator: { id?: string; externalId?: string; version?: number }): Promise<NormalizedTestCase> {
     if (!locator.id && !locator.externalId) throw new TestLinkMcpError("INVALID_ARGUMENT", "Provide testCaseId or externalId.");
-    const raw = await this.gateway.call("getTestCase", locator.id ? { testcaseid: locator.id } : { testcaseexternalid: locator.externalId });
+    const raw = await this.gateway.call("getTestCase", {
+      ...(locator.id ? { testcaseid: locator.id } : { testcaseexternalid: locator.externalId }),
+      ...(locator.version !== undefined ? { version: locator.version } : {}),
+    });
     const first = asArray(raw)[0];
     if (!first) throw new TestLinkMcpError("NOT_FOUND", "Test case was not found.");
     return normalizeTestCase(first);
   }
 
   private getCase(args: JsonObject): Promise<NormalizedTestCase> {
-    return this.fetchCase({ ...(args.testCaseId ? { id: String(args.testCaseId) } : {}), ...(args.externalId ? { externalId: String(args.externalId) } : {}) });
+    return this.fetchCase({
+      ...(args.testCaseId ? { id: String(args.testCaseId) } : {}),
+      ...(args.externalId ? { externalId: String(args.externalId) } : {}),
+      ...(args.version !== undefined ? { version: Number(args.version) } : {}),
+    });
   }
 
   private async attachments(args: JsonObject): Promise<unknown> {
