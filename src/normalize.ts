@@ -32,8 +32,8 @@ export function normalizeStep(raw: JsonObject, index: number): TestCaseStep {
 
 export function normalizeTestCase(raw: JsonObject): NormalizedTestCase {
   const stepsRaw = Array.isArray(raw.steps) ? raw.steps : asArray(raw.steps);
-  const id = text(raw.id ?? raw.testcase_id);
-  const externalId = text(raw.full_external_id ?? raw.external_id ?? raw.testcase_external_id ?? raw.externalId);
+  const id = text(raw.testcase_id ?? raw.id);
+  const externalId = text(raw.full_tc_external_id ?? raw.full_external_id ?? raw.external_id ?? raw.testcase_external_id ?? raw.externalId);
   const version = number(raw.version);
   const summary = text(raw.summary);
   const preconditions = text(raw.preconditions);

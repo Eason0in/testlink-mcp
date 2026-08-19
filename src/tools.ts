@@ -132,8 +132,8 @@ export const TOOLS: Tool[] = [
   ),
   tool(
     "testlink_get_traceability",
-    "Analyze requirement and test-plan traceability for one test case. Use for coverage questions, not generic search.",
-    { testCaseId: { type: "string" }, testPlanId: { type: "string" } }, ["testCaseId"],
+    "Analyze requirement links and membership in one specific test plan for a test case. Use for coverage questions, not generic search.",
+    { testCaseId: { type: "string" }, testPlanId: { type: "string" } }, ["testCaseId", "testPlanId"],
   ),
   tool(
     "testlink_get_execution_history",
@@ -150,6 +150,7 @@ export const TOOLS: Tool[] = [
     "Preview a safe create/update plus optional test-plan memberships. It does not write and returns a 10-minute preview ID required by apply.",
     {
       testCaseId: { type: "string" }, testProjectId: { type: "string" }, desiredCase: caseSchema,
+      authorLogin: { type: "string", description: "TestLink author login. Required when the preview will create a new test case." },
       testPlanIds: { type: "array", items: { type: "string" }, default: [] },
     }, ["desiredCase", "testProjectId"], previewAnnotations,
   ),

@@ -16,6 +16,7 @@ Rotate any credential that may have appeared in logs before sharing diagnostics.
 - Developer keys are redacted from caught errors and ledger records.
 - XML response size and request duration are bounded.
 - Attachments return metadata only.
-- Writes default to off and require preview, confirmation, snapshot revalidation, and a ledger record.
+- Writes default to off and require a single-use preview, confirmation, snapshot revalidation, and a ledger record.
 - Delete operations are not exposed.
 - Side effects are not automatically retried.
+- `OUTCOME_UNKNOWN` means a remote write may have succeeded; reconcile TestLink state before creating a new preview.

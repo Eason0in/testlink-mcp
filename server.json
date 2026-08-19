@@ -1,9 +1,9 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.easonlin/testlink-mcp",
+  "name": "io.github.eason0in/testlink-mcp",
   "description": "AI-friendly, safety-first TestLink MCP server",
   "repository": {
-    "url": "https://github.com/easonlin/testlink-mcp",
+    "url": "https://github.com/Eason0in/testlink-mcp",
     "source": "github"
   },
   "version": "1.0.0",

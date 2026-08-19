@@ -34,7 +34,7 @@ Two environment-dependent checks remain intentionally incomplete:
 | Field | Accepted value |
 | --- | --- |
 | npm package | `testlink-mcp@1.0.0` |
-| MCP name | `io.github.easonlin/testlink-mcp` |
+| MCP name | `io.github.eason0in/testlink-mcp` |
 | Transport | stdio |
 | Compatibility target | TestLink 1.9.20 XML-RPC API |
 | License | MIT |
