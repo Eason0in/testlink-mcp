@@ -153,7 +153,15 @@ Future image name after approval and publication: `ghcr.io/easonlin/testlink-mcp
 
 ## Release policy
 
-Version 1.0.0 is prepared but not published. Repository creation, npm publication, container push, provenance/attestation emission, and Registry/Glama/MCP.so submission are intentionally deferred until explicit approval.
+Version 1.0.0 is release-ready but publication remains an explicit action. The
+protected release workflow requires a signed version tag, reruns the complete
+test/eval/audit/SBOM/package gates, publishes npm with provenance, publishes a
+multi-architecture GHCR image with SBOM and provenance, creates a GitHub
+Release, and finally publishes the validated MCP Registry entry.
+
+A separate protected live-smoke workflow verifies the installed package against
+a real TestLink 1.9.20 instance using read-only calls. Its URL and developer key
+must be stored as environment secrets and are never written to logs.
 
 The package manifest and `server.json` share the MCP name `io.github.easonlin/testlink-mcp`. Registry validation can be run without publishing:
 
