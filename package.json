@@ -1,6 +1,6 @@
 {
   "name": "testlink-mcp",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "AI-friendly, safety-first MCP server for TestLink 1.9.20",
   "license": "MIT",
   "packageManager": "npm@11.17.0",

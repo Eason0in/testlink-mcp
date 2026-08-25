@@ -6,12 +6,12 @@
     "url": "https://github.com/Eason0in/testlink-mcp",
     "source": "github"
   },
-  "version": "1.0.5",
+  "version": "1.0.6",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "testlink-mcp",
-      "version": "1.0.5",
+      "version": "1.0.6",
       "transport": { "type": "stdio" },
       "environmentVariables": [
         { "name": "TESTLINK_URL", "description": "TestLink base URL", "isRequired": false, "isSecret": false },

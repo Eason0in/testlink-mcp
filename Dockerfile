@@ -13,7 +13,7 @@ FROM node:24.19.0-alpine3.24@sha256:d32cdf619f63fe0471182d08996dd516c6275bb5fd31
 LABEL org.opencontainers.image.title="testlink-mcp" \
       org.opencontainers.image.description="AI-friendly, safety-first MCP server for TestLink 1.9.20" \
       org.opencontainers.image.source="https://github.com/Eason0in/testlink-mcp" \
-      org.opencontainers.image.version="1.0.5" \
+      org.opencontainers.image.version="1.0.6" \
       org.opencontainers.image.licenses="MIT"
 
 ENV NODE_ENV=production

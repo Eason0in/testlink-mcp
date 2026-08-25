@@ -6,7 +6,7 @@ describe("release metadata", () => {
   it("keeps npm and MCP Registry identities aligned", async () => {
     const packageJson = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8"));
     const serverJson = JSON.parse(await readFile(new URL("../../server.json", import.meta.url), "utf8"));
-    expect(packageJson.version).toBe("1.0.5");
+    expect(packageJson.version).toBe("1.0.6");
     expect(packageJson.mcpName).toBe("io.github.Eason0in/testlink-mcp");
     expect(serverJson.name).toBe(packageJson.mcpName);
     expect(serverJson.version).toBe(packageJson.version);

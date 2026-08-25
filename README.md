@@ -44,7 +44,7 @@ TESTLINK_DEMO_MODE=true node dist/cli.js
 Future npm invocation after publication:
 
 ```bash
-npx -y testlink-mcp@1.0.5
+npx -y testlink-mcp@1.0.6
 ```
 
 MCP client configuration:
@@ -54,7 +54,7 @@ MCP client configuration:
   "mcpServers": {
     "testlink": {
       "command": "npx",
-      "args": ["-y", "testlink-mcp@1.0.5"],
+      "args": ["-y", "testlink-mcp@1.0.6"],
       "env": {
         "TESTLINK_URL": "https://testlink.example.com/testlink",
         "TESTLINK_DEV_KEY": "your-testlink-dev-key"
@@ -120,7 +120,7 @@ Failures use `ok: false` with `{ code, message, retryable, details? }`. Consumer
 Enable writes only in the server process that should perform them:
 
 ```bash
-TESTLINK_WRITE_ENABLED=true npx -y testlink-mcp@1.0.5
+TESTLINK_WRITE_ENABLED=true npx -y testlink-mcp@1.0.6
 ```
 
 The default ledger path is `~/.local/state/testlink-mcp/operations.jsonl`. Override it with `TESTLINK_LEDGER_PATH`. Before a remote write, the server persists an `attempted` row; it then records `applied` or `outcome_unknown`. The ledger contains hashes and redacted outcomes, not developer keys.
@@ -166,11 +166,11 @@ The image runs as a non-root user and uses Node 24.19.0. Build without pushing:
 docker buildx build --platform linux/amd64,linux/arm64 --tag testlink-mcp:local --output type=oci,dest=testlink-mcp.oci.tar .
 ```
 
-Future image name after approval and publication: `ghcr.io/eason0in/testlink-mcp:1.0.5`.
+Future image name after approval and publication: `ghcr.io/eason0in/testlink-mcp:1.0.6`.
 
 ## Release policy
 
-Version 1.0.5 is release-ready but publication remains an explicit action. The
+Version 1.0.6 is release-ready but publication remains an explicit action. The
 protected release workflow requires a signed version tag, reruns the complete
 test/eval/audit/SBOM/package gates, publishes npm with provenance, publishes a
 multi-architecture GHCR image with SBOM and provenance, creates a GitHub
