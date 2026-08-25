@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Eason0in/testlink-mcp",
+  "description": "AI-friendly, safety-first TestLink MCP server",
+  "repository": {
+    "url": "https://github.com/Eason0in/testlink-mcp",
+    "source": "github"
+  },
+  "version": "1.0.3",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "testlink-mcp",
+      "version": "1.0.3",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        { "name": "TESTLINK_URL", "description": "TestLink base URL", "isRequired": false, "isSecret": false },
+        { "name": "TESTLINK_DEV_KEY", "description": "TestLink API developer key", "isRequired": false, "isSecret": true },
+        { "name": "TESTLINK_DEMO_MODE", "description": "Use deterministic demo data", "isRequired": false, "isSecret": false },
+        { "name": "TESTLINK_WRITE_ENABLED", "description": "Allow confirmed writes", "isRequired": false, "isSecret": false }
+      ]
+    }
+  ]
+}

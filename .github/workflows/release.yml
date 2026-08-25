@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing signed version tag, for example v1.0.3"
+        required: true
+
+permissions:
+  contents: write
+  id-token: write
+  packages: write
+  attestations: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: release
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      - name: Pin npm used by the lockfile
+        run: npm install --global npm@11.17.0
+      - name: Import pinned release signing key
+        env:
+          EXPECTED_GPG_FINGERPRINT: 0EB5965CB6DF87E3F7FFEA2758C03387F54FDA7A
+        run: |
+          set -o pipefail
+          curl --fail --silent --show-error --location https://api.github.com/users/Eason0in/gpg_keys \
+            | jq -r '.[] | select(.key_id == "58C03387F54FDA7A") | .raw_key' \
+            | gpg --batch --import
+          actual_fingerprint="$(gpg --batch --with-colons --fingerprint "$EXPECTED_GPG_FINGERPRINT" | awk -F: '$1 == "fpr" { print $10; exit }')"
+          test "$actual_fingerprint" = "$EXPECTED_GPG_FINGERPRINT"
+      - name: Verify release version and signed tag
+        id: version
+        run: |
+          version="${RELEASE_TAG#v}"
+          test "$version" = "$(node -p 'require("./package.json").version')"
+          test "$version" = "$(node -p 'require("./server.json").version')"
+          git verify-tag "$RELEASE_TAG"
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+      - run: npm ci --ignore-scripts
+      - run: npm run check && npm test && npm run eval && npm run build
+      - run: npm audit --omit=dev --audit-level=high
+      - run: mkdir -p dist && npm sbom --sbom-format cyclonedx > dist/sbom.cdx.json
+      - run: npm pack --pack-destination dist
+      - name: Smoke installed npm package
+        run: |
+          package_dir="$RUNNER_TEMP/testlink-mcp-package"
+          npm install --ignore-scripts --prefix "$package_dir" "$GITHUB_WORKSPACE/dist/testlink-mcp-${RELEASE_TAG#v}.tgz"
+          node tests/smoke-installed.mjs node "$package_dir/node_modules/testlink-mcp/dist/cli.js"
+      - name: Install and validate MCP publisher
+        run: |
+          curl -fsSLO https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz
+          echo "a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc  mcp-publisher_linux_amd64.tar.gz" | sha256sum --check
+          tar -xzf mcp-publisher_linux_amd64.tar.gz mcp-publisher
+          sudo install -m 0755 mcp-publisher /usr/local/bin/mcp-publisher
+          mcp-publisher validate server.json
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Container release preflight
+        run: |
+          docker buildx build --platform linux/amd64 --load -t testlink-mcp:release-amd64 .
+          docker buildx build --platform linux/arm64 --load -t testlink-mcp:release-arm64 .
+          mkdir -p "$HOME/.cache/trivy"
+          for image in testlink-mcp:release-amd64 testlink-mcp:release-arm64; do
+            printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"release","version":"1"}}}' | docker run --rm -i -e TESTLINK_DEMO_MODE=true "$image" | grep -q '"serverInfo"'
+            docker run --rm \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              -v "$HOME/.cache/trivy:/root/.cache/trivy" \
+              aquasec/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
+              image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 "$image"
+          done
+      - run: npm publish "$GITHUB_WORKSPACE/dist/testlink-mcp-${RELEASE_TAG#v}.tgz" --provenance --access public
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        id: image
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/eason0in/testlink-mcp:${{ steps.version.outputs.value }}
+            ghcr.io/eason0in/testlink-mcp:latest
+          provenance: mode=max
+          sbom: true
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ghcr.io/eason0in/testlink-mcp
+          subject-digest: ${{ steps.image.outputs.digest }}
+          push-to-registry: true
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: dist/testlink-mcp-*.tgz
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$RELEASE_TAG" dist/testlink-mcp-*.tgz dist/sbom.cdx.json --verify-tag --generate-notes
+      - run: mcp-publisher login github-oidc
+      - run: mcp-publisher publish server.json

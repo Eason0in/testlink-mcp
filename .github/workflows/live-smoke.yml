@@ -1,0 +1,26 @@
+name: TestLink 1.9.20 Live Read-only Smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    environment: testlink-live-smoke
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+          cache: npm
+      - run: npm install --global npm@11.17.0
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Run read-only live smoke
+        env:
+          TESTLINK_URL: ${{ secrets.TESTLINK_URL }}
+          TESTLINK_DEV_KEY: ${{ secrets.TESTLINK_DEV_KEY }}
+        run: node tests/live-readonly-smoke.mjs

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#09132a"/><stop offset="1" stop-color="#151038"/></linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#58e0c2"/><stop offset="1" stop-color="#7ba7ff"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="18" stdDeviation="28" flood-color="#020617" flood-opacity=".45"/></filter>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1360" cy="100" r="250" fill="#3d4ca8" opacity=".16"/><circle cx="200" cy="850" r="310" fill="#127c72" opacity=".13"/>
+  <rect x="92" y="72" width="1416" height="72" rx="18" fill="#ffffff" opacity=".07"/>
+  <circle cx="132" cy="108" r="10" fill="#58e0c2"/><text x="156" y="116" fill="#e7eeff" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">TestLink MCP</text>
+  <text x="1238" y="116" fill="#a9b6d3" font-family="Arial, Helvetica, sans-serif" font-size="20">SAFE WRITE FLOW  ·  01 / 03</text>
+  <text x="92" y="252" fill="#f8fbff" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="700">Preview the change.</text>
+  <text x="92" y="328" fill="#aebcda" font-family="Arial, Helvetica, sans-serif" font-size="32">No write happens while you review the proposed TestLink update.</text>
+  <rect x="92" y="408" width="1416" height="318" rx="26" fill="#0a1123" stroke="#2d3b5d" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="92" y="408" width="1416" height="58" rx="26" fill="#141d35"/><rect x="92" y="440" width="1416" height="26" fill="#141d35"/>
+  <circle cx="132" cy="437" r="7" fill="#fb7185"/><circle cx="158" cy="437" r="7" fill="#fbbf24"/><circle cx="184" cy="437" r="7" fill="#58e0c2"/>
+  <text x="126" y="520" fill="#58e0c2" font-family="Menlo, Monaco, monospace" font-size="26">testlink_preview_test_case_sync</text>
+  <text x="126" y="577" fill="#c8d5ef" font-family="Menlo, Monaco, monospace" font-size="25">case: &quot;TL-482&quot;   ·   target plan: &quot;Regression&quot;</text>
+  <rect x="126" y="619" width="214" height="52" rx="26" fill="#1b5160"/><text x="154" y="654" fill="#baf7e9" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700">PREVIEW ONLY</text>
+  <text x="375" y="654" fill="#91a0bf" font-family="Arial, Helvetica, sans-serif" font-size="22">A clear diff is returned before anything changes.</text>
+  <rect x="92" y="786" width="680" height="8" rx="4" fill="url(#accent)"/><text x="92" y="848" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">1. Ask for a preview</text>
+  <text x="978" y="848" fill="#aebcda" font-family="Arial, Helvetica, sans-serif" font-size="26">Next: inspect the diff</text>
+</svg>
