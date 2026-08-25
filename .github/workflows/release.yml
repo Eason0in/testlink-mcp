@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing signed version tag, for example v1.0.4"
+        description: "Existing signed version tag, for example v1.0.5"
         required: true
 
 permissions:
@@ -29,7 +29,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24.19.0
-          registry-url: https://registry.npmjs.org
           cache: npm
       - name: Pin npm used by the lockfile
         run: npm install --global npm@11.17.0
@@ -83,7 +82,10 @@ jobs:
               aquasec/trivy@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
               image --scanners vuln --severity HIGH,CRITICAL --exit-code 1 "$image"
           done
-      - run: npm publish "$GITHUB_WORKSPACE/dist/testlink-mcp-${RELEASE_TAG#v}.tgz" --provenance --access public
+      - name: Publish npm package through trusted publishing
+        run: |
+          unset NODE_AUTH_TOKEN
+          npm publish "$GITHUB_WORKSPACE/dist/testlink-mcp-${RELEASE_TAG#v}.tgz" --provenance --access public
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io

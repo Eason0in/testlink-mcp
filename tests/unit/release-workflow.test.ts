@@ -29,15 +29,17 @@ describe("release workflow", () => {
     expect(workflow.indexOf('- run: npm pack --pack-destination dist')).toBeLessThan(workflow.indexOf(smokeStep ?? ""));
   });
 
-  it("publishes the packed artifact through an absolute path", async () => {
+  it("publishes the packed artifact through trusted publishing", async () => {
     const workflow = await readFile(new URL("../../.github/workflows/release.yml", import.meta.url), "utf8");
     const publishStep = workflow.match(
-      /      - run: npm publish "\$GITHUB_WORKSPACE\/dist\/testlink-mcp-\$\{RELEASE_TAG#v\}\.tgz" --provenance --access public/,
+      /      - name: Publish npm package through trusted publishing\n([\s\S]*?)(?=\n      - uses: docker\/login-action@v3)/,
     )?.[0];
 
-    expect(publishStep).toBe(
-      '      - run: npm publish "$GITHUB_WORKSPACE/dist/testlink-mcp-${RELEASE_TAG#v}.tgz" --provenance --access public',
+    expect(publishStep).toContain(
+      'npm publish "$GITHUB_WORKSPACE/dist/testlink-mcp-${RELEASE_TAG#v}.tgz" --provenance --access public',
     );
+    expect(publishStep).toContain("unset NODE_AUTH_TOKEN");
+    expect(workflow).not.toContain("registry-url: https://registry.npmjs.org");
     expect(workflow.indexOf('- run: npm pack --pack-destination dist')).toBeLessThan(workflow.indexOf(publishStep ?? ""));
     expect(workflow.indexOf('Container release preflight')).toBeLessThan(workflow.indexOf(publishStep ?? ""));
   });
