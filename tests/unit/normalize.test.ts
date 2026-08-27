@@ -7,6 +7,13 @@ describe("TestLink normalization", () => {
     expect(item.summary).toBe("Hello");
     expect(item.steps[0]).toEqual({ number: 1, actions: "Act", expectedResults: "Done" });
   });
+  it("normalizes unterminated markup in linear time", () => {
+    const startedAt = performance.now();
+    const item = normalizeTestCase({ name: "Case", summary: "<".repeat(20_000) });
+
+    expect(item.summary).toBe("<".repeat(20_000));
+    expect(performance.now() - startedAt).toBeLessThan(100);
+  });
   it("preserves normalized camel-case identifiers and execution types", () => {
     const item = normalizeTestCase({
       id: "101",

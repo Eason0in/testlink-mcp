@@ -21,6 +21,7 @@ async function connected(env: NodeJS.ProcessEnv) {
 describe("MCP contract", () => {
   it("starts without credentials and exposes schemas", async () => {
     const client = await connected({ TESTLINK_LEDGER_PATH: "/tmp/testlink-mcp-contract.jsonl" });
+    expect(client.getServerVersion()).toEqual({ name: "testlink-mcp", version: "1.0.7" });
     const tools = await client.listTools();
     expect(tools.tools).toHaveLength(15);
     expect(tools.tools.every((item) => item.outputSchema?.type === "object")).toBe(true);
