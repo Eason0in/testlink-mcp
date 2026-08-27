@@ -11,7 +11,17 @@ export function asArray(value: unknown): JsonObject[] {
 
 function text(value: unknown): string | undefined {
   if (value === null || value === undefined) return undefined;
-  const result = String(value).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const input = String(value);
+  let result = "";
+  let textStart = 0;
+  for (let tagStart = input.indexOf("<", textStart); tagStart !== -1; tagStart = input.indexOf("<", textStart)) {
+    const tagEnd = input.indexOf(">", tagStart + 1);
+    if (tagEnd === -1) break;
+    result += `${input.slice(textStart, tagStart)} `;
+    textStart = tagEnd + 1;
+  }
+  result += input.slice(textStart);
+  result = result.replace(/\s+/g, " ").trim();
   return result || undefined;
 }
 
