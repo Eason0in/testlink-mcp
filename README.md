@@ -1,6 +1,6 @@
 # testlink-mcp
 
-[![M8ven Score](https://m8ven.ai/badge/mcp/eason0in-testlink-mcp-2jz0i7)](https://m8ven.ai/mcp/eason0in-testlink-mcp-2jz0i7)
+[![M8ven Score](https://m8ven.ai/badge/mcp/eason0in-testlink-mcp-2jz0i7?v=e96821ddfbd23b20558c92581da614a4)](https://m8ven.ai/mcp/eason0in-testlink-mcp-2jz0i7)
 
 An AI-friendly, safety-first Model Context Protocol server for TestLink 1.9.20. It exposes normalized discovery and analysis tools, bounded cursor pagination, structured output, and preview-before-apply writes over stdio.
 
