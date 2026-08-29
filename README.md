@@ -1,5 +1,7 @@
 # testlink-mcp
 
+[![M8ven Score](https://m8ven.ai/badge/mcp/eason0in-testlink-mcp-2jz0i7)](https://m8ven.ai/mcp/eason0in-testlink-mcp-2jz0i7)
+
 An AI-friendly, safety-first Model Context Protocol server for TestLink 1.9.20. It exposes normalized discovery and analysis tools, bounded cursor pagination, structured output, and preview-before-apply writes over stdio.
 
 This repository is a clean implementation based on TestLink's public XML-RPC interface and the public MCP SDK. It has no dependency on a private TestLink package or private source tree.
