@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing signed version tag, for example v1.0.7"
+        description: "Existing signed version tag, for example v1.0.8"
         required: true
 
 permissions:

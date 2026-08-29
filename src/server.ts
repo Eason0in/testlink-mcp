@@ -29,7 +29,7 @@ const prompts = [
 export function createServer(config: Config): { server: Server; service: TestLinkService } {
   const service = new TestLinkService(createGateway(config), config);
   const server = new Server(
-    { name: "testlink-mcp", version: "1.0.7" },
+    { name: "testlink-mcp", version: "1.0.8" },
     { capabilities: { tools: {}, resources: {}, prompts: {} } },
   );
 
